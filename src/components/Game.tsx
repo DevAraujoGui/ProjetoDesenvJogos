@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react'; 
 import { useGame } from '../hooks/useGame';
 import { HUD } from './HUD';
 import { CompanyCard } from './CompanyCard';
@@ -11,6 +11,25 @@ export function Game() {
   const { state, startGame, decide } = useGame();
   const { phase, company, score, timeLeft, totalDecisions, correctDecisions,
           streak, maxStreak, lastFeedback, waitingNext } = state;
+
+  useEffect(() => {
+  if (lastFeedback) {
+    console.log("Conteúdo do feedback:", lastFeedback);
+
+    // Tentamos várias possibilidades comuns:
+    const feedback = lastFeedback as any;
+    const isSuccess = 
+      feedback.type === 'success' || 
+      feedback.status === 'success' || 
+      feedback.correct === true || 
+      feedback.isCorrect === true;
+    
+    const arquivoSom = isSuccess ? 'acerto.mp3' : 'erro.mp3';
+    const som = new Audio(`/sounds/${arquivoSom}`);
+    
+    som.play().catch(error => console.error("Erro ao tocar:", error));
+  }
+}, [lastFeedback]);
 
   if (phase === 'start') {
     return (
