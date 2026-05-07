@@ -20,4 +20,5 @@ export interface GameState {
   maxStreak: number;
   lastFeedback: Feedback | null;
   waitingNext: boolean;
+  isPaused: boolean;
 }

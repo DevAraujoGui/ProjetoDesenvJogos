@@ -17,6 +17,7 @@ const initialState: GameState = {
   maxStreak: 0,
   lastFeedback: null,
   waitingNext: false,
+  isPaused: false,
 };
 
 export function useGame() {
@@ -28,6 +29,7 @@ export function useGame() {
     if (timerRef.current) clearInterval(timerRef.current);
     if (nextRef.current) clearTimeout(nextRef.current);
   }, []);
+
 
   const startGame = useCallback(() => {
     clearTimers();
@@ -42,28 +44,40 @@ export function useGame() {
       maxStreak: 0,
       lastFeedback: null,
       waitingNext: false,
+      isPaused: false, 
     });
   }, [clearTimers]);
 
-  // Tick timer
+
   useEffect(() => {
-    if (state.phase !== 'playing') return;
-    timerRef.current = setInterval(() => {
-      setState(prev => {
-        const next = prev.timeLeft - 1;
-        if (next <= 0) {
-          clearTimers();
-          return { ...prev, timeLeft: 0, phase: 'over' };
-        }
-        return { ...prev, timeLeft: next };
-      });
-    }, 1000);
-    return clearTimers;
-  }, [state.phase, clearTimers]);
+  
+  if (state.phase !== 'playing' || state.isPaused) {
+    clearTimers(); 
+    return;
+  }
+
+  timerRef.current = setInterval(() => {
+    setState(prev => {
+      const next = prev.timeLeft - 1;
+      if (next <= 0) {
+        clearTimers();
+        return { ...prev, timeLeft: 0, phase: 'over' };
+      }
+      return { ...prev, timeLeft: next };
+    });
+  }, 1000);
+
+  return clearTimers;
+}, [state.phase, state.isPaused, clearTimers]); 
+
+  const togglePause = useCallback(() => {
+    setState(prev => ({ ...prev, isPaused: !prev.isPaused }));
+  }, []);
 
   const decide = useCallback((decision: PlayerDecision) => {
     setState(prev => {
-      if (prev.waitingNext || prev.phase !== 'playing' || !prev.company) return prev;
+      
+      if (prev.waitingNext || prev.phase !== 'playing' || !prev.company || prev.isPaused) return prev;
 
       const result = evaluateDecision(prev.company, decision);
       const newStreak = result.correct ? prev.streak + 1 : 0;
@@ -86,9 +100,9 @@ export function useGame() {
         return { ...prev, company: generateCompany(), lastFeedback: null, waitingNext: false };
       });
     }, NEXT_COMPANY_DELAY);
-  }, []);
+  }, []); 
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
-  return { state, startGame, decide };
+  return { state, startGame, decide, togglePause };
 }
